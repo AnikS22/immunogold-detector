@@ -6,7 +6,7 @@ from typing import Dict, List, Sequence, Tuple
 
 import numpy as np
 
-from prepare_labels import discover_image_records
+from prepare_labels import ID_TO_CLASS, discover_image_records
 
 
 @dataclass
@@ -141,6 +141,114 @@ def evaluate_subset(
     }
 
 
+def joint_match_image(
+    gt_map: Dict[int, np.ndarray],
+    pred_map_cls: Dict[int, List[Tuple[float, float, float]]],
+    match_dist: float,
+) -> Tuple[int, int, int, int, int, List[float], np.ndarray]:
+    """
+    Pool all GT points with class labels and all predictions with class labels.
+    For each GT (in class order 0 then 1), assign nearest unmatched prediction within match_dist.
+
+    Returns:
+        tp_loc: localized matches (any class)
+        tp_cls: matches with correct class_id
+        wrong_cls: localized but wrong class
+        fp: unmatched predictions
+        fn: unmatched GT
+        loc_errors: distances for localized pairs
+        confusion: 2x2 counts [gt_row][pred_col] for matched pairs only
+    """
+    gt_list: List[Tuple[float, float, int]] = []
+    for cls in [0, 1]:
+        arr = gt_map.get(cls, np.zeros((0, 2)))
+        for i in range(len(arr)):
+            gt_list.append((float(arr[i, 0]), float(arr[i, 1]), cls))
+
+    pred_list: List[Tuple[float, float, float, int]] = []
+    for cls in [0, 1]:
+        for p in pred_map_cls.get(cls, []):
+            pred_list.append((float(p[0]), float(p[1]), float(p[2]), cls))
+
+    if len(gt_list) == 0:
+        return 0, 0, 0, len(pred_list), 0, [], np.zeros((2, 2), dtype=np.int64)
+
+    pred_xy = np.array([[p[0], p[1]] for p in pred_list], dtype=np.float32) if pred_list else np.zeros((0, 2), np.float32)
+    used = np.zeros(len(pred_list), dtype=bool)
+    loc_errors: List[float] = []
+    confusion = np.zeros((2, 2), dtype=np.int64)
+    tp_loc = tp_cls = wrong_cls = 0
+
+    for gx, gy, gcls in gt_list:
+        if len(pred_xy) == 0:
+            continue
+        dist = np.sqrt(((pred_xy - np.array([[gx, gy]], dtype=np.float32)) ** 2).sum(axis=1))
+        dist[used] = 1e9
+        j = int(np.argmin(dist))
+        if dist[j] < match_dist:
+            used[j] = True
+            tp_loc += 1
+            loc_errors.append(float(dist[j]))
+            pcls = pred_list[j][3]
+            confusion[gcls, pcls] += 1
+            if pcls == gcls:
+                tp_cls += 1
+            else:
+                wrong_cls += 1
+
+    fp = int((~used).sum())
+    fn = len(gt_list) - tp_loc
+    return tp_loc, tp_cls, wrong_cls, fp, fn, loc_errors, confusion
+
+
+def evaluate_joint(
+    gt_map: Dict[str, Dict[int, np.ndarray]],
+    pred_map: Dict[str, Dict[int, List[Tuple[float, float, float]]]],
+    match_dist: float,
+    image_ids: Sequence[str],
+) -> Dict[str, object]:
+    """Pooled joint localization + size classification across images."""
+    total_tp_loc = total_tp_cls = total_wrong = total_fp = total_fn = 0
+    loc_all: List[float] = []
+    confusion = np.zeros((2, 2), dtype=np.int64)
+
+    for image_id in image_ids:
+        points = gt_map[image_id]
+        preds = pred_map.get(image_id, {0: [], 1: []})
+        tp_loc, tp_cls, wrong_cls, fp, fn, loc_err, cm = joint_match_image(points, preds, match_dist)
+        total_tp_loc += tp_loc
+        total_tp_cls += tp_cls
+        total_wrong += wrong_cls
+        total_fp += fp
+        total_fn += fn
+        loc_all.extend(loc_err)
+        confusion += cm
+
+    # Localization treated as binary detection (each GT is one event)
+    prec_loc = total_tp_loc / max(1, total_tp_loc + total_fp)
+    rec_loc = total_tp_loc / max(1, total_tp_loc + total_fn)
+    f1_loc = 2 * prec_loc * rec_loc / max(1e-8, prec_loc + rec_loc)
+    mean_loc = float(np.mean(loc_all)) if loc_all else float("nan")
+
+    size_acc = float(total_tp_cls / max(1, total_tp_loc)) if total_tp_loc > 0 else float("nan")
+
+    return {
+        "localization": Metrics(
+            precision=float(prec_loc),
+            recall=float(rec_loc),
+            f1=float(f1_loc),
+            tp=int(total_tp_loc),
+            fp=int(total_fp),
+            fn=int(total_fn),
+            mean_localization_error=mean_loc,
+        ),
+        "size_accuracy_on_matched": size_acc,
+        "n_matched": int(total_tp_loc),
+        "n_wrong_class_among_matched": int(total_wrong),
+        "confusion_matched_pairs": confusion,
+    }
+
+
 def build_grouped_folds(image_ids: Sequence[str], k_folds: int, seed: int) -> List[List[str]]:
     if k_folds < 2:
         return [list(image_ids)]
@@ -177,6 +285,23 @@ def print_metrics_block(name: str, m: Metrics) -> None:
     print(f"{name}.tp={m.tp} {name}.fp={m.fp} {name}.fn={m.fn}")
 
 
+def print_joint_block(j: Dict[str, object]) -> None:
+    loc = j["localization"]  # type: ignore[assignment]
+    assert isinstance(loc, Metrics)
+    cm = j["confusion_matched_pairs"]  # type: ignore[assignment]
+    assert isinstance(cm, np.ndarray)
+    print("--- joint (localize first, then score size on matched pairs) ---")
+    print_metrics_block("joint.localization", loc)
+    print(f"joint.size_accuracy_on_matched={j['size_accuracy_on_matched']:.4f}")
+    print(f"joint.n_matched={j['n_matched']} joint.n_wrong_class_among_matched={j['n_wrong_class_among_matched']}")
+    print("joint.confusion_rows_GT_cols_PRED (matched pairs only):")
+    for r in [0, 1]:
+        row = ID_TO_CLASS[r]
+        print(
+            f"  GT {row}: pred {ID_TO_CLASS[0]}={cm[r,0]} pred {ID_TO_CLASS[1]}={cm[r,1]}"
+        )
+
+
 def main() -> None:
     p = argparse.ArgumentParser(description="Evaluate keypoint detections against GT coordinates.")
     p.add_argument("--data_root", type=str, required=True)
@@ -194,6 +319,11 @@ def main() -> None:
     p.add_argument("--sweep_steps", type=int, default=0)
     p.add_argument("--k_folds", type=int, default=1, help="Grouped K-fold by image_id.")
     p.add_argument("--seed", type=int, default=42)
+    p.add_argument(
+        "--report_joint",
+        action="store_true",
+        help="Report joint localization + size accuracy and 2x2 confusion on spatially matched pairs.",
+    )
     args = p.parse_args()
 
     records = discover_image_records(args.data_root)
@@ -221,9 +351,13 @@ def main() -> None:
             print_metrics_block("class_12nm", metrics["12nm"])
             print(f"macro.f1={metrics['macro'].f1:.4f}")
             macro_f1 = metrics["macro"].f1
+            if args.report_joint:
+                joint = evaluate_joint(gt_map, pred_map, args.match_dist, image_ids)
+                print_joint_block(joint)
         else:
             fold_macros: List[float] = []
             fold_f1_all: List[float] = []
+            fold_joint_size_acc: List[float] = []
             for i, fold_ids in enumerate(folds):
                 metrics = evaluate_subset(gt_map, pred_map, args.match_dist, fold_ids)
                 fold_macros.append(metrics["macro"].f1)
@@ -233,11 +367,20 @@ def main() -> None:
                     f"n_images={len(fold_ids)} all_f1={metrics['all'].f1:.4f} "
                     f"macro_f1={metrics['macro'].f1:.4f}"
                 )
+                if args.report_joint:
+                    joint = evaluate_joint(gt_map, pred_map, args.match_dist, fold_ids)
+                    print(f"  fold {i + 1} joint.size_accuracy_on_matched={joint['size_accuracy_on_matched']:.4f}")
+                    fold_joint_size_acc.append(float(joint["size_accuracy_on_matched"]))  # type: ignore[arg-type]
             macro_f1 = float(np.mean(fold_macros))
             print(
                 f"threshold={thr:.6f} grouped_cv_mean_all_f1={float(np.mean(fold_f1_all)):.4f} "
                 f"grouped_cv_mean_macro_f1={macro_f1:.4f}"
             )
+            if args.report_joint and fold_joint_size_acc:
+                print(
+                    f"threshold={thr:.6f} grouped_cv_mean_joint_size_accuracy="
+                    f"{float(np.nanmean(fold_joint_size_acc)):.4f}"
+                )
 
         if macro_f1 > best_macro:
             best_macro = macro_f1

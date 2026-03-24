@@ -67,6 +67,7 @@ class PointPatchDataset(Dataset):
         preprocess: bool = False,
         sigma_jitter: bool = False,
         consistency_pairs: bool = False,
+        mask_bottom_px: int = 0,
     ) -> None:
         self.patch_h, self.patch_w = patch_size
         self.samples_per_epoch = int(samples_per_epoch)
@@ -78,6 +79,7 @@ class PointPatchDataset(Dataset):
         self.preprocess = bool(preprocess)
         self.sigma_jitter = bool(sigma_jitter)
         self.consistency_pairs = bool(consistency_pairs)
+        self.mask_bottom_px = int(max(0, mask_bottom_px))
         self.rng = np.random.default_rng(seed)
         if self.target_type not in {"gaussian", "disk"}:
             raise ValueError(f"Unsupported target_type={self.target_type}; use 'gaussian' or 'disk'.")
@@ -172,6 +174,12 @@ class PointPatchDataset(Dataset):
         else:
             hm[0] = binary_disk_map((self.patch_h, self.patch_w), p6, radius=self.target_radius)
             hm[1] = binary_disk_map((self.patch_h, self.patch_w), p12, radius=self.target_radius)
+
+        # Optional: suppress the lower image strip where dark bars can dominate.
+        if self.mask_bottom_px > 0:
+            cut = max(0, self.patch_h - self.mask_bottom_px)
+            img_patch[:, cut:, :] = 0.0
+            hm[:, cut:, :] = 0.0
 
         # Apply augmentation
         if self.augment:

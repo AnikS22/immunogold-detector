@@ -41,3 +41,6 @@ project/*.tiff
 # Misc local outputs
 *.out
 *.err
+
+# Local evaluation runs (CSVs, PNGs; keep out of git)
+project/outputs/

@@ -101,6 +101,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--early_stop_delta", type=float, default=1e-5, help="Minimum val loss improvement to reset patience")
     p.add_argument("--use_sliding_window", action="store_true", help="Use SlidingWindowPatchDataset for maximum data coverage")
     p.add_argument("--patch_stride", type=int, default=128, help="Stride for sliding window patches")
+    p.add_argument("--binary_mode", action="store_true", help="Train a single-channel all-particle detector.")
+    p.add_argument("--mask_bottom_px", type=int, default=0, help="Zero out bottom N pixels in each training patch.")
     return p.parse_args()
 
 
@@ -171,7 +173,8 @@ def run_epoch(
                 # Mixed precision training
                 with torch.cuda.amp.autocast():
                     logits = model(images)
-                    loss = criterion(logits, targets)
+                    tgt = targets.max(dim=1, keepdim=True).values if (logits.shape[1] == 1 and targets.shape[1] > 1) else targets
+                    loss = criterion(logits, tgt)
 
                     if has_consistency and consistency_weight > 0:
                         logits2 = model(images2)
@@ -190,7 +193,8 @@ def run_epoch(
             else:
                 # Standard training (no mixed precision)
                 logits = model(images)
-                loss = criterion(logits, targets)
+                tgt = targets.max(dim=1, keepdim=True).values if (logits.shape[1] == 1 and targets.shape[1] > 1) else targets
+                loss = criterion(logits, tgt)
 
                 if has_consistency and consistency_weight > 0:
                     logits2 = model(images2)
@@ -261,6 +265,7 @@ def main() -> None:
             preprocess=args.use_clahe,
             sigma_jitter=args.sigma_jitter,
             consistency_pairs=(args.consistency_weight > 0),
+            mask_bottom_px=args.mask_bottom_px,
         )
     val_ds = PointPatchDataset(
         val_r,
@@ -273,15 +278,17 @@ def main() -> None:
         augment=False,
         seed=args.seed + 1,
         preprocess=args.use_clahe,
+        mask_bottom_px=args.mask_bottom_px,
     )
     train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=0)
     val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False, num_workers=0)
 
     # Create model based on model_type flag
+    out_channels = 1 if args.binary_mode else 2
     if args.model_type == "unet_deep":
-        model = UNetDeepKeypointDetector(in_channels=3, out_channels=2, base_channels=args.base_channels).to(device)
+        model = UNetDeepKeypointDetector(in_channels=3, out_channels=out_channels, base_channels=args.base_channels).to(device)
     else:
-        model = UNetKeypointDetector(in_channels=3, out_channels=2, base_channels=args.base_channels).to(device)
+        model = UNetKeypointDetector(in_channels=3, out_channels=out_channels, base_channels=args.base_channels).to(device)
 
     if args.resume:
         model.load_state_dict(torch.load(args.resume, map_location=device))
@@ -320,7 +327,8 @@ def main() -> None:
         f"target_type={args.target_type} target_radius={args.target_radius} sigma={args.sigma} "
         f"use_clahe={args.use_clahe} sigma_jitter={args.sigma_jitter} "
         f"consistency_weight={args.consistency_weight} sched={args.sched} "
-        f"mixed_precision={args.mixed_precision}"
+        f"mixed_precision={args.mixed_precision} binary_mode={args.binary_mode} "
+        f"mask_bottom_px={args.mask_bottom_px}"
     )
 
     os.makedirs(args.save_dir, exist_ok=True)
