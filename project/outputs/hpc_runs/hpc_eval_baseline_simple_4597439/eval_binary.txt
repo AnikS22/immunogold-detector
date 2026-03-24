@@ -1,0 +1,79 @@
+threshold=0.000000
+binary.precision=0.0027
+binary.recall=0.1214
+binary.f1=0.0054
+binary.mean_localization_error=9.4370
+binary.tp=55 binary.fp=19945 binary.fn=398
+threshold=0.050000
+binary.precision=0.0027
+binary.recall=0.1214
+binary.f1=0.0054
+binary.mean_localization_error=9.4370
+binary.tp=55 binary.fp=19945 binary.fn=398
+threshold=0.080000
+binary.precision=0.0027
+binary.recall=0.1214
+binary.f1=0.0054
+binary.mean_localization_error=9.4370
+binary.tp=55 binary.fp=19945 binary.fn=398
+threshold=0.100000
+binary.precision=0.0027
+binary.recall=0.1214
+binary.f1=0.0054
+binary.mean_localization_error=9.4370
+binary.tp=55 binary.fp=19945 binary.fn=398
+threshold=0.120000
+binary.precision=0.0027
+binary.recall=0.1214
+binary.f1=0.0054
+binary.mean_localization_error=9.4370
+binary.tp=55 binary.fp=19945 binary.fn=398
+threshold=0.150000
+binary.precision=0.0027
+binary.recall=0.1214
+binary.f1=0.0054
+binary.mean_localization_error=9.4370
+binary.tp=55 binary.fp=19945 binary.fn=398
+threshold=0.180000
+binary.precision=0.0032
+binary.recall=0.0353
+binary.f1=0.0059
+binary.mean_localization_error=9.4810
+binary.tp=16 binary.fp=4991 binary.fn=437
+threshold=0.200000
+binary.precision=0.0031
+binary.recall=0.0177
+binary.f1=0.0053
+binary.mean_localization_error=9.2674
+binary.tp=8 binary.fp=2574 binary.fn=445
+threshold=0.250000
+binary.precision=0.0024
+binary.recall=0.0044
+binary.f1=0.0031
+binary.mean_localization_error=7.5272
+binary.tp=2 binary.fp=819 binary.fn=451
+threshold=0.300000
+binary.precision=0.0042
+binary.recall=0.0044
+binary.f1=0.0043
+binary.mean_localization_error=7.5272
+binary.tp=2 binary.fp=477 binary.fn=451
+threshold=0.350000
+binary.precision=0.0000
+binary.recall=0.0000
+binary.f1=0.0000
+binary.mean_localization_error=nan
+binary.tp=0 binary.fp=9 binary.fn=453
+threshold=0.400000
+binary.precision=0.0000
+binary.recall=0.0000
+binary.f1=0.0000
+binary.mean_localization_error=nan
+binary.tp=0 binary.fp=0 binary.fn=453
+threshold=0.500000
+binary.precision=0.0000
+binary.recall=0.0000
+binary.f1=0.0000
+binary.mean_localization_error=nan
+binary.tp=0 binary.fp=0 binary.fn=453
+best_threshold=0.180000 best_binary_f1=0.0059

@@ -1,0 +1,52 @@
+{
+  "best": {
+    "threshold": 0.0,
+    "all_f1": 0.0008,
+    "f1_6nm": 0.0014,
+    "f1_12nm": 0.0002,
+    "macro_f1": 0.0008,
+    "model": "unet"
+  },
+  "all": [
+    {
+      "threshold": 0.0,
+      "all_f1": 0.0008,
+      "f1_6nm": 0.0014,
+      "f1_12nm": 0.0002,
+      "macro_f1": 0.0008,
+      "model": "unet"
+    },
+    {
+      "threshold": 0.0,
+      "all_f1": 0.0009,
+      "f1_6nm": 0.0015,
+      "f1_12nm": 0.0002,
+      "macro_f1": 0.0008,
+      "model": "semi"
+    },
+    {
+      "threshold": 0.05,
+      "all_f1": 0.0001,
+      "f1_6nm": 0.0,
+      "f1_12nm": 0.0001,
+      "macro_f1": 0.0001,
+      "model": "two_stage"
+    },
+    {
+      "threshold": 0.0,
+      "all_f1": 0.0,
+      "f1_6nm": 0.0,
+      "f1_12nm": 0.0,
+      "macro_f1": 0.0,
+      "model": "logcnn"
+    },
+    {
+      "threshold": 0.0,
+      "all_f1": 0.0,
+      "f1_6nm": 0.0,
+      "f1_12nm": 0.0,
+      "macro_f1": 0.0,
+      "model": "cgan"
+    }
+  ]
+}

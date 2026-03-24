@@ -1,0 +1,86 @@
+threshold=0.000000
+all.precision=0.0004
+all.recall=0.3113
+all.f1=0.0008
+all.mean_localization_error=3.3578
+all.tp=141 all.fp=342947 all.fn=312
+class_6nm.precision=0.0007
+class_6nm.recall=0.3077
+class_6nm.f1=0.0014
+class_6nm.mean_localization_error=3.3296
+class_6nm.tp=124 class_6nm.fp=176715 class_6nm.fn=279
+class_12nm.precision=0.0001
+class_12nm.recall=0.3400
+class_12nm.f1=0.0002
+class_12nm.mean_localization_error=3.5640
+class_12nm.tp=17 class_12nm.fp=166232 class_12nm.fn=33
+macro.f1=0.0008
+threshold=0.010000
+all.precision=0.0004
+all.recall=0.3113
+all.f1=0.0008
+all.mean_localization_error=3.3578
+all.tp=141 all.fp=342947 all.fn=312
+class_6nm.precision=0.0007
+class_6nm.recall=0.3077
+class_6nm.f1=0.0014
+class_6nm.mean_localization_error=3.3296
+class_6nm.tp=124 class_6nm.fp=176715 class_6nm.fn=279
+class_12nm.precision=0.0001
+class_12nm.recall=0.3400
+class_12nm.f1=0.0002
+class_12nm.mean_localization_error=3.5640
+class_12nm.tp=17 class_12nm.fp=166232 class_12nm.fn=33
+macro.f1=0.0008
+threshold=0.020000
+all.precision=0.0004
+all.recall=0.3113
+all.f1=0.0008
+all.mean_localization_error=3.3578
+all.tp=141 all.fp=342947 all.fn=312
+class_6nm.precision=0.0007
+class_6nm.recall=0.3077
+class_6nm.f1=0.0014
+class_6nm.mean_localization_error=3.3296
+class_6nm.tp=124 class_6nm.fp=176715 class_6nm.fn=279
+class_12nm.precision=0.0001
+class_12nm.recall=0.3400
+class_12nm.f1=0.0002
+class_12nm.mean_localization_error=3.5640
+class_12nm.tp=17 class_12nm.fp=166232 class_12nm.fn=33
+macro.f1=0.0008
+threshold=0.030000
+all.precision=0.0004
+all.recall=0.3113
+all.f1=0.0008
+all.mean_localization_error=3.3578
+all.tp=141 all.fp=342672 all.fn=312
+class_6nm.precision=0.0007
+class_6nm.recall=0.3077
+class_6nm.f1=0.0014
+class_6nm.mean_localization_error=3.3296
+class_6nm.tp=124 class_6nm.fp=176659 class_6nm.fn=279
+class_12nm.precision=0.0001
+class_12nm.recall=0.3400
+class_12nm.f1=0.0002
+class_12nm.mean_localization_error=3.5640
+class_12nm.tp=17 class_12nm.fp=166013 class_12nm.fn=33
+macro.f1=0.0008
+threshold=0.050000
+all.precision=0.0004
+all.recall=0.3113
+all.f1=0.0008
+all.mean_localization_error=3.3578
+all.tp=141 all.fp=340149 all.fn=312
+class_6nm.precision=0.0007
+class_6nm.recall=0.3077
+class_6nm.f1=0.0014
+class_6nm.mean_localization_error=3.3296
+class_6nm.tp=124 class_6nm.fp=176154 class_6nm.fn=279
+class_12nm.precision=0.0001
+class_12nm.recall=0.3400
+class_12nm.f1=0.0002
+class_12nm.mean_localization_error=3.5640
+class_12nm.tp=17 class_12nm.fp=163995 class_12nm.fn=33
+macro.f1=0.0008
+best_threshold=0.050000 best_macro_f1=0.0008

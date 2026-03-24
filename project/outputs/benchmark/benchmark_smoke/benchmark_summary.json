@@ -1,0 +1,89 @@
+{
+  "best": {
+    "pipeline": "extra",
+    "run_name": "extra_1",
+    "pred_csv": "predictions_baseline_best_t20.csv",
+    "threshold": 0.0,
+    "all_f1": 0.0013066639863302844,
+    "macro_f1": 0.0006541538771197102,
+    "f1_6nm": 0.0013083077542394204,
+    "f1_12nm": 0.0,
+    "precision_all": 0.0006608545357496886,
+    "recall_all": 0.05739514348785872
+  },
+  "top10": [
+    {
+      "pipeline": "extra",
+      "run_name": "extra_1",
+      "pred_csv": "predictions_baseline_best_t20.csv",
+      "threshold": 0.0,
+      "all_f1": 0.0013066639863302844,
+      "macro_f1": 0.0006541538771197102,
+      "f1_6nm": 0.0013083077542394204,
+      "f1_12nm": 0.0,
+      "precision_all": 0.0006608545357496886,
+      "recall_all": 0.05739514348785872
+    },
+    {
+      "pipeline": "extra",
+      "run_name": "extra_1",
+      "pred_csv": "predictions_baseline_best_t20.csv",
+      "threshold": 0.02,
+      "all_f1": 0.0013066639863302844,
+      "macro_f1": 0.0006541538771197102,
+      "f1_6nm": 0.0013083077542394204,
+      "f1_12nm": 0.0,
+      "precision_all": 0.0006608545357496886,
+      "recall_all": 0.05739514348785872
+    },
+    {
+      "pipeline": "extra",
+      "run_name": "extra_1",
+      "pred_csv": "predictions_baseline_best_t20.csv",
+      "threshold": 0.05,
+      "all_f1": 0.0013066639863302844,
+      "macro_f1": 0.0006541538771197102,
+      "f1_6nm": 0.0013083077542394204,
+      "f1_12nm": 0.0,
+      "precision_all": 0.0006608545357496886,
+      "recall_all": 0.05739514348785872
+    },
+    {
+      "pipeline": "extra",
+      "run_name": "extra_2",
+      "pred_csv": "predictions_two_stage_hpc_t20k45.csv",
+      "threshold": 0.0,
+      "all_f1": 0.001216223362064407,
+      "macro_f1": 0.0006099016202169129,
+      "f1_6nm": 0.0012198032404338258,
+      "f1_12nm": 0.0,
+      "precision_all": 0.0006154834220878268,
+      "recall_all": 0.05077262693156733
+    },
+    {
+      "pipeline": "extra",
+      "run_name": "extra_2",
+      "pred_csv": "predictions_two_stage_hpc_t20k45.csv",
+      "threshold": 0.02,
+      "all_f1": 0.001216223362064407,
+      "macro_f1": 0.0006099016202169129,
+      "f1_6nm": 0.0012198032404338258,
+      "f1_12nm": 0.0,
+      "precision_all": 0.0006154834220878268,
+      "recall_all": 0.05077262693156733
+    },
+    {
+      "pipeline": "extra",
+      "run_name": "extra_2",
+      "pred_csv": "predictions_two_stage_hpc_t20k45.csv",
+      "threshold": 0.05,
+      "all_f1": 0.001216223362064407,
+      "macro_f1": 0.0006099016202169129,
+      "f1_6nm": 0.0012198032404338258,
+      "f1_12nm": 0.0,
+      "precision_all": 0.0006154834220878268,
+      "recall_all": 0.05077262693156733
+    }
+  ],
+  "num_rows": 6
+}

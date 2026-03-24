@@ -1,0 +1,86 @@
+threshold=0.000000
+all.precision=0.0000
+all.recall=0.0000
+all.f1=0.0000
+all.mean_localization_error=nan
+all.tp=0 all.fp=0 all.fn=453
+class_6nm.precision=0.0000
+class_6nm.recall=0.0000
+class_6nm.f1=0.0000
+class_6nm.mean_localization_error=nan
+class_6nm.tp=0 class_6nm.fp=0 class_6nm.fn=403
+class_12nm.precision=0.0000
+class_12nm.recall=0.0000
+class_12nm.f1=0.0000
+class_12nm.mean_localization_error=nan
+class_12nm.tp=0 class_12nm.fp=0 class_12nm.fn=50
+macro.f1=0.0000
+threshold=0.010000
+all.precision=0.0000
+all.recall=0.0000
+all.f1=0.0000
+all.mean_localization_error=nan
+all.tp=0 all.fp=0 all.fn=453
+class_6nm.precision=0.0000
+class_6nm.recall=0.0000
+class_6nm.f1=0.0000
+class_6nm.mean_localization_error=nan
+class_6nm.tp=0 class_6nm.fp=0 class_6nm.fn=403
+class_12nm.precision=0.0000
+class_12nm.recall=0.0000
+class_12nm.f1=0.0000
+class_12nm.mean_localization_error=nan
+class_12nm.tp=0 class_12nm.fp=0 class_12nm.fn=50
+macro.f1=0.0000
+threshold=0.020000
+all.precision=0.0000
+all.recall=0.0000
+all.f1=0.0000
+all.mean_localization_error=nan
+all.tp=0 all.fp=0 all.fn=453
+class_6nm.precision=0.0000
+class_6nm.recall=0.0000
+class_6nm.f1=0.0000
+class_6nm.mean_localization_error=nan
+class_6nm.tp=0 class_6nm.fp=0 class_6nm.fn=403
+class_12nm.precision=0.0000
+class_12nm.recall=0.0000
+class_12nm.f1=0.0000
+class_12nm.mean_localization_error=nan
+class_12nm.tp=0 class_12nm.fp=0 class_12nm.fn=50
+macro.f1=0.0000
+threshold=0.030000
+all.precision=0.0000
+all.recall=0.0000
+all.f1=0.0000
+all.mean_localization_error=nan
+all.tp=0 all.fp=0 all.fn=453
+class_6nm.precision=0.0000
+class_6nm.recall=0.0000
+class_6nm.f1=0.0000
+class_6nm.mean_localization_error=nan
+class_6nm.tp=0 class_6nm.fp=0 class_6nm.fn=403
+class_12nm.precision=0.0000
+class_12nm.recall=0.0000
+class_12nm.f1=0.0000
+class_12nm.mean_localization_error=nan
+class_12nm.tp=0 class_12nm.fp=0 class_12nm.fn=50
+macro.f1=0.0000
+threshold=0.050000
+all.precision=0.0000
+all.recall=0.0000
+all.f1=0.0000
+all.mean_localization_error=nan
+all.tp=0 all.fp=0 all.fn=453
+class_6nm.precision=0.0000
+class_6nm.recall=0.0000
+class_6nm.f1=0.0000
+class_6nm.mean_localization_error=nan
+class_6nm.tp=0 class_6nm.fp=0 class_6nm.fn=403
+class_12nm.precision=0.0000
+class_12nm.recall=0.0000
+class_12nm.f1=0.0000
+class_12nm.mean_localization_error=nan
+class_12nm.tp=0 class_12nm.fp=0 class_12nm.fn=50
+macro.f1=0.0000
+best_threshold=0.000000 best_macro_f1=0.0000
