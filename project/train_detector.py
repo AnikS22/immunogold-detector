@@ -17,14 +17,16 @@ from prepare_labels import ImageRecord, discover_image_records
 
 
 class WeightedHeatmapLoss(nn.Module):
+    """Weighted MSE loss that correctly applies sigmoid to logits before computing error."""
     def __init__(self, pos_weight: float = 30.0, neg_weight: float = 1.0, pos_power: float = 1.0) -> None:
         super().__init__()
         self.pos_weight = float(pos_weight)
         self.neg_weight = float(neg_weight)
         self.pos_power = float(pos_power)
 
-    def forward(self, preds: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+    def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
         t = torch.clamp(targets, 0.0, 1.0)
+        preds = torch.sigmoid(logits)  # Convert logits to probabilities before MSE
         weights = self.neg_weight + self.pos_weight * torch.pow(t, self.pos_power)
         return ((preds - t) ** 2 * weights).mean()
 
