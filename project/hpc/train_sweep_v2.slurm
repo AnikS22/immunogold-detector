@@ -179,10 +179,32 @@ python -u evaluate_detector.py \
   --sweep_steps 50 \
   | tee "$SAVE_DIR/eval_strict.txt"
 
+# ============================================================
+# PHASE 4: AUTO-OPTIMIZE — iteratively adjust and retrain
+# ============================================================
+echo ""
+echo "=== PHASE 4: AUTO-OPTIMIZE ==="
+python -u auto_optimize.py \
+  --data_root "$DATA_ROOT" \
+  --save_dir "$SAVE_DIR" \
+  --model_type "$MODEL_TYPE" \
+  --loss_type "$LOSS_TYPE" \
+  --sigma "$SIGMA" \
+  --loss_pos_weight "$POS_WEIGHT" \
+  --lr "$LR" \
+  --epochs "$EPOCHS" \
+  --patch_h "$PATCH_H" \
+  --patch_stride "$PATCH_STRIDE" \
+  --base_channels "$BASE_CH" \
+  --extra_flags "$EXTRA_FLAGS" \
+  --target_f1 0.91 \
+  --max_rounds 4
+
 echo ""
 echo "================================================================"
 echo "  DONE — $LABEL"
-echo "  Results: $SAVE_DIR/eval_results.txt"
-echo "  Strict:  $SAVE_DIR/eval_strict.txt"
-echo "  Visuals: $SAVE_DIR/vis/"
+echo "  Initial results: $SAVE_DIR/eval_results.txt"
+echo "  Strict eval:     $SAVE_DIR/eval_strict.txt"
+echo "  Optimized:       $SAVE_DIR/round*/eval_results.txt"
+echo "  Visuals:         $SAVE_DIR/vis/"
 echo "================================================================"
