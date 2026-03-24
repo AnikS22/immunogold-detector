@@ -6,6 +6,7 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=48G
 #SBATCH --gres=gpu:1
+#SBATCH --partition=longq7-eng
 
 set -euo pipefail
 

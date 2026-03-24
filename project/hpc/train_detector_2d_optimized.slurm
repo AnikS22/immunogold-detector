@@ -2,6 +2,7 @@
 #SBATCH --job-name=gold_detector_optimized
 #SBATCH --output=logs/gold_detector_opt_%j.out
 #SBATCH --error=logs/gold_detector_opt_%j.err
+#SBATCH --partition=longq7-eng
 #SBATCH --time=08:00:00
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=48G
