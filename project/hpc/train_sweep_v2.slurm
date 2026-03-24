@@ -2,7 +2,7 @@
 #SBATCH --job-name=gold_v2
 #SBATCH --output=logs/gold_v2_%A_%a.out
 #SBATCH --error=logs/gold_v2_%A_%a.err
-#SBATCH --time=12:00:00
+#SBATCH --time=06:00:00
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=48G
 #SBATCH --gres=gpu:1
