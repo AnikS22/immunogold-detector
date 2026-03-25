@@ -254,6 +254,38 @@ class GaussianBlur:
         return image_out, heatmap
 
 
+class NormalizeRobust:
+    """Robust per-patch normalization to prevent saturation/flat patches.
+
+    Uses percentile scaling to restore dynamic range after aggressive transforms
+    (e.g. CLAHE/Mantis + brightness/contrast + gamma). Keeps output in [0,1].
+    """
+
+    def __init__(self, p_lo: float = 1.0, p_hi: float = 99.0) -> None:
+        self.p_lo = float(p_lo)
+        self.p_hi = float(p_hi)
+
+    def __call__(self, image: np.ndarray, heatmap: np.ndarray, rng: Optional[np.random.Generator] = None):
+        img = np.asarray(image, dtype=np.float32)
+        out = np.zeros_like(img, dtype=np.float32)
+        for ch in range(img.shape[0]):
+            x = img[ch]
+            lo = float(np.quantile(x, self.p_lo / 100.0))
+            hi = float(np.quantile(x, self.p_hi / 100.0))
+            if hi > lo + 1e-6:
+                y = (x - lo) / (hi - lo)
+            else:
+                # Degenerate case (nearly constant patch). Don't destroy the patch by
+                # collapsing it to zeros; keep original values.
+                y = x
+            y = np.clip(y, 0.0, 1.0)
+            # If scaling still saturates most pixels, gently pull away from 1.0.
+            if float(np.mean(y >= 0.995)) > 0.85:
+                y = np.clip(y * 0.97, 0.0, 1.0)
+            out[ch] = y
+        return out, heatmap
+
+
 class Cutout:
     """Single square cutout (dust particle/small defect)."""
 
@@ -308,9 +340,25 @@ class BrightnessContrast:
     def __call__(
         self, image: np.ndarray, heatmap: np.ndarray, rng: np.random.Generator
     ) -> Tuple[np.ndarray, np.ndarray]:
-        contrast = float(rng.uniform(*self.contrast_range))
-        brightness = float(rng.uniform(*self.brightness_range))
-        image_out = np.clip(image * contrast + brightness, 0.0, 1.0)
+        # If upstream preprocessing (e.g., CLAHE/Mantis) already pushed the patch mean very high,
+        # a positive brightness/contrast draw can saturate most pixels to 1.0 (appearing "blank white").
+        # We adaptively cap brightness/contrast based on current mean to preserve dynamic range.
+        mn_b, mx_b = float(self.brightness_range[0]), float(self.brightness_range[1])
+        mn_c, mx_c = float(self.contrast_range[0]), float(self.contrast_range[1])
+        m = float(np.asarray(image, dtype=np.float32).mean())
+        if m > 0.9:
+            # Prevent raising mean further; allow only negative or tiny positive brightness.
+            mx_b = min(mx_b, max(0.0, 0.98 - m))
+            # Avoid contrast >1 when already near-white.
+            mx_c = min(mx_c, 1.0)
+        contrast = float(rng.uniform(mn_c, mx_c))
+        brightness = float(rng.uniform(mn_b, mx_b))
+        image_out = np.clip(image * contrast + brightness, 0.0, 1.0).astype(np.float32)
+        # Final guard: avoid near-white drift that can look blank in downstream visualization/training.
+        out_mean = float(np.asarray(image_out, dtype=np.float32).mean())
+        if out_mean > 0.95:
+            shift = out_mean - 0.93
+            image_out = np.clip(image_out - shift, 0.0, 1.0).astype(np.float32)
         return image_out, heatmap
 
 
@@ -338,20 +386,25 @@ def apply_augmentation(
     - Elastic deform reduced to 0.3: strong deform can misalign tiny particles
     - Mantis local contrast added: enhances particle visibility
     """
+    applied = []
+
     # GEOMETRIC AUGMENTATIONS FIRST (most impactful, physically justified)
 
     # Flips — EM has no canonical orientation, these are FREE data diversity
     if rng.random() < flip_p:
+        applied.append("flip_x")
         image = image[:, :, ::-1].copy()
         heatmap = heatmap[:, :, ::-1].copy()
 
     if rng.random() < flip_p:
+        applied.append("flip_y")
         image = image[:, ::-1, :].copy()
         heatmap = heatmap[:, ::-1, :].copy()
 
     # 90-degree rotations — same justification as flips
     if rng.random() < rot90_p:
         k = int(rng.integers(1, 4))
+        applied.append(f"rot90_k{k}")
         image = np.rot90(image, k=k, axes=(1, 2)).copy()
         heatmap = np.rot90(heatmap, k=k, axes=(1, 2)).copy()
 
@@ -359,46 +412,74 @@ def apply_augmentation(
 
     # Elastic deformation (specimen drift, charging effects)
     if rng.random() < elastic_p:
+        applied.append("elastic(alpha=20,sigma=4)")
         elastic = ElasticDeform(alpha=20.0, sigma=4.0)
         image, heatmap = elastic(image, heatmap, rng)
 
     # Mantis local contrast enhancement
     if rng.random() < mantis_p:
         strength = float(rng.uniform(0.3, 0.7))
+        applied.append(f"mantis(strength={strength:.3f})")
         mantis = MantisLocalContrast(kernel_sigma=15.0, strength=strength)
         image, _ = mantis(image, heatmap)
 
     # Gaussian blur — VERY mild to avoid destroying 1px particles
     if rng.random() < blur_p:
+        applied.append("blur(0.3-0.8)")
         blur = GaussianBlur(sigma_range=(0.3, 0.8))
         image, _ = blur(image, heatmap, rng)
 
     # Gamma correction (beam intensity, detector response)
     if rng.random() < gamma_p:
+        # gamma itself is sampled inside GammaCorrection; we can approximate by sampling here for logging clarity
+        applied.append("gamma")
         gamma = GammaCorrection()
         image, _ = gamma(image, heatmap, rng)
 
     # Brightness/contrast (gain/amplifier variation)
     if rng.random() < brightness_contrast_p:
+        applied.append("brightness_contrast")
         bc = BrightnessContrast()
         image, _ = bc(image, heatmap, rng)
 
     # Gaussian noise (detector shot noise)
     if rng.random() < noise_p:
+        applied.append("gaussian_noise")
         noise = GaussianNoise()
         image, _ = noise(image, heatmap, rng)
 
     # Salt & pepper noise (hot pixels, cosmic rays)
     if rng.random() < salt_pepper_p:
+        applied.append("salt_pepper")
         sp = SaltPepperNoise()
         image, _ = sp(image, heatmap, rng)
 
     # Cutout — only zero the image, NOT the heatmap (erasing heatmap
     # teaches the network that particles don't exist where they do)
     if rng.random() < cutout_p:
+        applied.append("cutout")
         cutout = Cutout(size_frac=1.0/20.0, max_count=1)
         image_out, _ = cutout(image, heatmap, rng)
         image = image_out
+
+    # Final robust normalization step to avoid washed-out patches.
+    # Triggered only when image is near-saturated or low-contrast.
+    cur_mean = float(np.asarray(image, dtype=np.float32).mean())
+    cur_std = float(np.asarray(image, dtype=np.float32).std())
+    # Trigger stabilization for both severe saturation and subtle washed-out cases
+    # observed in logs (mean ~0.95 with std ~0.026).
+    if (cur_mean > 0.97) or (cur_std < 0.02) or (cur_mean > 0.93 and cur_std < 0.03):
+        image_before_norm = np.asarray(image, dtype=np.float32).copy()
+        # Use tighter percentiles to avoid pushing large regions to exact 0/1.
+        norm = NormalizeRobust(p_lo=5.0, p_hi=95.0)
+        image, _ = norm(image, heatmap)
+        # If still flattened after normalization, blend back original local texture.
+        post_mean = float(np.asarray(image, dtype=np.float32).mean())
+        post_std = float(np.asarray(image, dtype=np.float32).std())
+        if post_mean > 0.95 and post_std < 0.02:
+            image = np.clip(0.6 * image + 0.4 * image_before_norm, 0.0, 1.0).astype(np.float32)
+            applied.append("texture_restore_blend")
+        applied.append("normalize_robust(5-95)")
 
     return image, heatmap
 
