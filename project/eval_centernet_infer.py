@@ -11,7 +11,7 @@ import tifffile
 import torch
 
 from model_centernet_cem500k import CenterNetCEM500K
-from prepare_labels import discover_image_records
+from prepare_labels import discover_image_records, _load_image_safe
 
 
 def estimate_bottom_black_bar_px(
@@ -201,7 +201,7 @@ def main() -> None:
         w = csv.writer(f)
         w.writerow(["image_id", "x", "y", "class_id", "confidence"])
         for rec in records:
-            img = tifffile.imread(rec.image_path)
+            img = _load_image_safe(rec.image_path)
             chw = image_to_chw_01(img)
             ignore_bottom_px = int(args.ignore_bottom_px)
             if args.auto_ignore_bottom_bar:

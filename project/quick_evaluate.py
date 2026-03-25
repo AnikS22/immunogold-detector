@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from dataset_points import _to_chw_01
 from model_unet_deep import UNetDeepKeypointDetector
-from prepare_labels import discover_image_records
+from prepare_labels import discover_image_records, _load_image_safe
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
@@ -43,7 +43,7 @@ predictions = []
 with torch.no_grad():
     for rec in test_records:
         try:
-            img = _to_chw_01(tifffile.imread(rec.image_path))
+            img = _to_chw_01(_load_image_safe(rec.image_path))
             c, h, w = img.shape
             
             # Forward pass

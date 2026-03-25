@@ -148,10 +148,10 @@ def generate_retry_args(base_args, diagnoses, round_num, prev_results):
         args['extra'] = ''  # strip mantis/jitter, go simple
 
     elif primary == 'fp_flood':
-        # Too many false positives — increase pos_weight to make model more selective,
-        # reduce sigma so targets are tighter
+        # Too many false positives — reduce pos_weight so model penalizes FP more
+        # (pos_weight amplifies positive pixel loss; lower = less eager to predict positive)
         pw = float(args.get('loss_pos_weight', 300))
-        args['loss_pos_weight'] = str(min(pw * 0.5, 50))  # REDUCE pos_weight to penalize FP more
+        args['loss_pos_weight'] = str(max(pw * 0.5, 30))
         sigma = float(args.get('sigma', 2.0))
         args['sigma'] = str(max(sigma - 0.5, 1.0))
         # Lower learning rate for fine-tuning
@@ -161,7 +161,7 @@ def generate_retry_args(base_args, diagnoses, round_num, prev_results):
     elif primary == 'low_recall':
         # Missing particles — increase sigma for bigger targets, increase pos_weight
         pw = float(args.get('loss_pos_weight', 300))
-        args['loss_pos_weight'] = str(pw * 2)
+        args['loss_pos_weight'] = str(min(pw * 2, 1000))
         sigma = float(args.get('sigma', 2.0))
         args['sigma'] = str(min(sigma + 1.0, 5.0))
         args['epochs'] = '150'

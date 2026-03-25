@@ -11,7 +11,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 
 from model_refiner import PatchRefinerCNN
-from prepare_labels import ImageRecord, discover_image_records
+from prepare_labels import ImageRecord, discover_image_records, _load_image_safe
 
 
 def _split_by_image(
@@ -97,7 +97,7 @@ class RefinerPatchDataset(Dataset):
         self.points1: List[np.ndarray] = []
         self.points_all: List[np.ndarray] = []
         for r in records:
-            img = _to_chw_01(tifffile.imread(r.image_path))
+            img = _to_chw_01(_load_image_safe(r.image_path))
             p0 = r.points[0].astype(np.float32)
             p1 = r.points[1].astype(np.float32)
             all_pts = np.concatenate([p0, p1], axis=0) if (len(p0) + len(p1)) > 0 else np.zeros((0, 2), np.float32)

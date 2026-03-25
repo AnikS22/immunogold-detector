@@ -13,7 +13,7 @@ from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
 from dataset_guard import enforce_allowed_data_root
 from log_detector import multiscale_log_candidates
 from model_refiner import PatchRefinerCNN
-from prepare_labels import ImageRecord, discover_image_records
+from prepare_labels import ImageRecord, discover_image_records, _load_image_safe
 
 
 def split_by_image(
@@ -120,7 +120,7 @@ def build_candidate_dataset(
     labels: List[int] = []
 
     for r in records:
-        img = tifffile.imread(r.image_path)
+        img = _load_image_safe(r.image_path)
         img_gray = img.mean(axis=2) if img.ndim == 3 else img.astype(np.float32)
         img_gray = img_gray.astype(np.float32)
         mn, mx = float(img_gray.min()), float(img_gray.max())
