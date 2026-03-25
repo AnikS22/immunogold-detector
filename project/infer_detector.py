@@ -9,9 +9,15 @@ import numpy as np
 import tifffile
 import torch
 
+from scipy.ndimage import gaussian_filter
+
 from model_unet import UNetKeypointDetector
 from model_unet_deep import UNetDeepKeypointDetector
 from prepare_labels import ID_TO_CLASS, discover_image_records, _load_image_safe
+
+_COORD_NOTE = (
+    "x,y = full-image pixel coordinates (origin top-left); not 0–1 normalized, not % of W/H."
+)
 
 
 def image_to_chw_01(image: np.ndarray) -> np.ndarray:
@@ -110,16 +116,32 @@ def main() -> None:
     p.add_argument("--max_detections_per_class", type=int, default=2000)
     p.add_argument("--use_mantis", action="store_true", help="Apply Mantis local contrast preprocessing")
     p.add_argument("--save_vis", action="store_true", help="Save per-image detection overlays.")
+    p.add_argument(
+        "--binary_mode",
+        action="store_true",
+        help="Single-channel heatmap (all particles). Checkpoint must match (trained from train_detector --binary_mode).",
+    )
+    p.add_argument(
+        "--peak_blur_sigma",
+        type=float,
+        default=0.0,
+        help="Optional Gaussian blur (in pixels) applied to each heatmap before peak detection.",
+    )
+    p.add_argument("--save_heatmap", action="store_true", help="Save per-image heatmap PNGs alongside detections.")
     args = p.parse_args()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    out_ch = 1 if args.binary_mode else 2
     if args.model_type == "unet_deep":
-        model = UNetDeepKeypointDetector(in_channels=3, out_channels=2, base_channels=args.base_channels).to(device)
+        model = UNetDeepKeypointDetector(in_channels=3, out_channels=out_ch, base_channels=args.base_channels).to(
+            device
+        )
     else:
-        model = UNetKeypointDetector(in_channels=3, out_channels=2, base_channels=args.base_channels).to(device)
+        model = UNetKeypointDetector(in_channels=3, out_channels=out_ch, base_channels=args.base_channels).to(device)
     model.load_state_dict(torch.load(args.checkpoint, map_location=device))
     model.eval()
     print(f"Loaded {args.model_type} model from {args.checkpoint}")
+    print(_COORD_NOTE)
 
     # Setup Mantis preprocessing if requested
     mantis_filter = None
@@ -128,8 +150,9 @@ def main() -> None:
         mantis_filter = MantisLocalContrast(kernel_sigma=15.0, strength=0.5)
         print("Mantis local contrast preprocessing enabled")
 
-    if args.save_vis:
-        import matplotlib.pyplot as plt
+    plt = None
+    if args.save_vis or args.save_heatmap:
+        import matplotlib.pyplot as plt  # noqa: PLC0415
 
         os.makedirs(args.out_vis_dir, exist_ok=True)
     records = discover_image_records(args.data_root)
@@ -144,9 +167,13 @@ def main() -> None:
         pred = tiled_inference(model, chw, (args.tile_h, args.tile_w), (args.stride_h, args.stride_w), device)
 
         dets_all = []
-        for cls in [0, 1]:
+        class_loop = [0] if args.binary_mode else [0, 1]
+        for cls in class_loop:
+            hm = np.asarray(pred[cls], dtype=np.float32)
+            if args.peak_blur_sigma and args.peak_blur_sigma > 0:
+                hm = gaussian_filter(hm, sigma=float(args.peak_blur_sigma))
             dets = peak_detect(
-                pred[cls],
+                hm,
                 threshold=args.threshold,
                 min_distance=args.min_distance,
                 max_peaks=args.max_detections_per_class,
@@ -155,16 +182,44 @@ def main() -> None:
                 rows.append([r.image_id, f"{x:.2f}", f"{y:.2f}", str(cls), f"{conf:.4f}"])
                 dets_all.append((x, y, cls))
 
-        if args.save_vis:
-            vis = np.transpose(chw, (1, 2, 0))
+        if args.save_heatmap:
+            assert plt is not None
             plt.figure(figsize=(7, 7))
-            plt.imshow(vis)
+            if args.binary_mode:
+                hm_show = np.asarray(pred[0], dtype=np.float32)
+            else:
+                hm_show = np.maximum(pred[0], pred[1])
+            plt.imshow(hm_show, cmap="magma")
+            plt.title(f"{r.image_id} — detector heatmap (pixel grid)")
+            plt.xlabel("x (pixels)")
+            plt.ylabel("y (pixels)")
+            fig = plt.gcf()
+            fig.text(0.5, 0.02, _COORD_NOTE, ha="center", fontsize=8)
+            plt.tight_layout(rect=(0, 0.06, 1, 1))
+            plt.savefig(os.path.join(args.out_vis_dir, f"{r.image_id}_heatmap.png"), dpi=150)
+            plt.close()
+
+        if args.save_vis:
+            assert plt is not None
+            vis = np.transpose(chw, (1, 2, 0))
+            hpx, wpx = vis.shape[0], vis.shape[1]
+            fig, ax = plt.subplots(figsize=(7, 7))
+            ax.imshow(vis)
             for x, y, cls in dets_all:
                 color = "cyan" if cls == 0 else "magenta"
-                plt.scatter([x], [y], s=10, c=color)
-            plt.title(f"{r.image_id} detections")
-            plt.axis("off")
-            plt.tight_layout()
+                ax.scatter([x], [y], s=10, c=color)
+            ax.set_title(f"{r.image_id} — detections\n{_COORD_NOTE}")
+            ax.set_xlabel("x (pixels)")
+            ax.set_ylabel("y (pixels)")
+            fig.text(
+                0.5,
+                0.02,
+                f"Image size {wpx}×{hpx} px — markers same frame as CSV x,y",
+                ha="center",
+                fontsize=8,
+            )
+            ax.set_axis_off()
+            plt.tight_layout(rect=(0, 0.05, 1, 1))
             plt.savefig(os.path.join(args.out_vis_dir, f"{r.image_id}_detections.png"), dpi=150)
             plt.close()
 

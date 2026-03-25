@@ -91,6 +91,11 @@ def main() -> None:
     p.add_argument("--sweep_steps", type=int, default=0)
     args = p.parse_args()
 
+    print(
+        "COORDINATES: pred_csv x/y and --match_dist are in full-image pixels; "
+        "not 0–1 normalized and not percent of width/height."
+    )
+
     records = discover_image_records(args.data_root)
     gt_map = {r.image_id: np.concatenate([r.points[0], r.points[1]], axis=0) for r in records}
     pred_map_raw = load_predictions(args.pred_csv)

@@ -10,6 +10,9 @@
 
 # Baseline: binary Gaussian heatmap U-Net — no hard particle filter, no bottom masking.
 # Goal: maximize usable F1 first; overlays + heatmaps land in OUT_DIR/vis/
+#
+# COORDINATES: infer_detector predictions + PNG overlays use x,y in FULL IMAGE PIXELS
+# (not normalized 0–1, not %). evaluate_detector_binary --match_dist is pixels.
 
 set -euo pipefail
 
@@ -62,6 +65,10 @@ python train_detector.py \
 
 # Peak decode: local maxima + light blur (fewer duplicate X's per blob) + optional line thinning.
 # Confidences = heatmap values; evaluate_detector_binary.py sweeps confidence thresholds.
+echo "----------------------------------------------------------------"
+echo "COORDINATES: pred_binary.csv x,y and vis/* PNGs = FULL IMAGE PIXEL coords"
+echo "  (not 0–1, not %). Binary eval --match_dist is pixels."
+echo "----------------------------------------------------------------"
 python infer_detector.py \
   --data_root "$DATA_ROOT" \
   --checkpoint "$SAVE_DIR/detector_best.pt" \

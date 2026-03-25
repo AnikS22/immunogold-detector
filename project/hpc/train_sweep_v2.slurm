@@ -11,6 +11,11 @@
 # ============================================================================
 # V2 SWEEP — 20 jobs with fixed coordinates, S1 palette, S4 transpose
 # Submit with:  sbatch hpc/train_sweep_v2.slurm
+#
+# COORDINATE SYSTEM (IMPORTANT):
+#   infer_detector.py writes prediction CSV x,y and overlay PNG scatter in FULL
+#   IMAGE PIXELS (origin top-left), same frame as GT — not 0–1 normalized and
+#   not percent of width/height. evaluate_detector --match_dist is also pixels.
 # ============================================================================
 
 set -euo pipefail
@@ -136,6 +141,10 @@ echo "Training complete."
 # ============================================================
 echo ""
 echo "=== PHASE 2: INFERENCE ==="
+echo "----------------------------------------------------------------"
+echo "COORDINATES: CSV x,y and vis/*_detections.png markers = FULL IMAGE PIXELS"
+echo "  (not 0–1 normalized, not % of W/H). eval --match_dist is pixels."
+echo "----------------------------------------------------------------"
 python -u infer_detector.py \
   --data_root "$DATA_ROOT" \
   --checkpoint "$SAVE_DIR/detector_best.pt" \
@@ -156,6 +165,9 @@ python -u infer_detector.py \
 # ============================================================
 echo ""
 echo "=== PHASE 3: EVALUATION ==="
+echo "----------------------------------------------------------------"
+echo "METRICS: --match_dist and localization errors are in PIXELS (same as x,y above)."
+echo "----------------------------------------------------------------"
 
 # Sweep thresholds to find optimal
 python -u evaluate_detector.py \

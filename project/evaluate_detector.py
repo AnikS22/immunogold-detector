@@ -336,6 +336,11 @@ def main() -> None:
     )
     args = p.parse_args()
 
+    print(
+        "COORDINATES: pred_csv x/y and --match_dist are in full-image pixels "
+        "(same frame as GT after labeling); not normalized 0–1 and not % of image size."
+    )
+
     records = discover_image_records(args.data_root)
     gt_map = {r.image_id: r.points for r in records}
     pred_map_raw = load_predictions(args.pred_csv)
