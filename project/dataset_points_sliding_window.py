@@ -12,7 +12,7 @@ import tifffile
 import torch
 from torch.utils.data import Dataset
 
-from prepare_labels import ImageRecord, gaussian_heatmap
+from prepare_labels import ImageRecord, gaussian_heatmap, _load_image_safe
 from augmentations import apply_augmentation, CLAHEPreprocess, MantisLocalContrast, MultiScaleSigmaJitter
 
 
@@ -115,7 +115,7 @@ class SlidingWindowPatchDataset(Dataset):
 
         for img_idx, rec in enumerate(records):
             try:
-                img = _to_chw_01(tifffile.imread(rec.image_path))
+                img = _to_chw_01(_load_image_safe(rec.image_path))
                 if self.preprocess:
                     dummy_hm = np.zeros((2, img.shape[1], img.shape[2]), dtype=np.float32)
                     img, _ = self.clahe(img, dummy_hm)
@@ -150,7 +150,7 @@ class SlidingWindowPatchDataset(Dataset):
 
         for rec in records:
             try:
-                img = _to_chw_01(tifffile.imread(rec.image_path))
+                img = _to_chw_01(_load_image_safe(rec.image_path))
                 if self.preprocess:
                     dummy_hm = np.zeros((2, img.shape[1], img.shape[2]), dtype=np.float32)
                     img, _ = self.clahe(img, dummy_hm)

@@ -5,6 +5,7 @@ from typing import List
 ALLOWED_DATA_ROOTS: List[str] = [
     "/Users/aniksahai/Desktop/Max Planck Project/project/data/Max Planck Data",
     "/mnt/beegfs/home/asahai2024/max-planck-project/project/data/Max Planck Data",
+    "/Users/mpcr/Desktop/GoldDigger 26/Max Planck Data",
 ]
 
 
