@@ -6,7 +6,7 @@ import tifffile
 import torch
 from torch.utils.data import Dataset
 
-from prepare_labels import ImageRecord, gaussian_heatmap
+from prepare_labels import ImageRecord, gaussian_heatmap, _load_image_safe
 from augmentations import apply_augmentation, CLAHEPreprocess, MultiScaleSigmaJitter
 
 
@@ -92,7 +92,7 @@ class PointPatchDataset(Dataset):
         self.points12: List[np.ndarray] = []
         self.points_all: List[np.ndarray] = []
         for r in records:
-            img = _to_chw_01(tifffile.imread(r.image_path))
+            img = _to_chw_01(_load_image_safe(r.image_path))
             _, h, w = img.shape
             if h < self.patch_h or w < self.patch_w:
                 continue

@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 import tifffile
+from PIL import Image
 
 from dataset_guard import enforce_allowed_data_root
 
@@ -70,10 +71,13 @@ def _parse_csv_points(path: str, width: int, height: int) -> Dict[int, List[Tupl
         except ValueError:
             continue
 
-        # Normalize if needed.
+        # Convert micron coordinates to pixels.
+        # CSVs contain coordinates in microns (values ~0.3-0.85).
+        # Pixel size = 1790 pixels per micron (verified from ImageJ ROI files).
+        PIXELS_PER_MICRON = 1790.0
         if x <= 1.5 and y <= 1.5:
-            x *= width
-            y *= height
+            x *= PIXELS_PER_MICRON
+            y *= PIXELS_PER_MICRON
         x = float(np.clip(x, 0, width - 1))
         y = float(np.clip(y, 0, height - 1))
 
@@ -114,6 +118,30 @@ def _collect_synapse_dirs(data_root: str) -> List[str]:
     return sorted(set(syn_dirs))
 
 
+def _load_image_safe(image_path: str) -> np.ndarray:
+    """Load a TIF image, handling palette mode (S1) and transposed dims (S4).
+
+    Returns:
+        np.ndarray with shape (H, W) or (H, W, 3), consistent orientation.
+        All images normalized to standard orientation: H=2115, W=2048.
+    """
+    pil_img = Image.open(image_path)
+    if pil_img.mode == 'P':
+        pil_img = pil_img.convert('RGB')
+    elif pil_img.mode not in ('RGB', 'L'):
+        pil_img = pil_img.convert('RGB')
+    image = np.array(pil_img)
+
+    # Handle S4 transposed dimensions: (2048, 2115) instead of (2115, 2048)
+    if image.ndim >= 2 and image.shape[1] > image.shape[0]:
+        if image.ndim == 2:
+            image = image.T
+        else:
+            image = np.transpose(image, (1, 0, 2))
+
+    return image
+
+
 def discover_image_records(data_root: str) -> List[ImageRecord]:
     data_root = enforce_allowed_data_root(data_root)
     records: List[ImageRecord] = []
@@ -122,7 +150,7 @@ def discover_image_records(data_root: str) -> List[ImageRecord]:
         image_path = _find_primary_image(syn_dir)
         if image_path is None:
             continue
-        image = tifffile.imread(image_path)
+        image = _load_image_safe(image_path)
         if image.ndim == 2:
             h, w = image.shape
         else:

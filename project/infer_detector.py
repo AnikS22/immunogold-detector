@@ -11,7 +11,7 @@ import torch
 
 from model_unet import UNetKeypointDetector
 from model_unet_deep import UNetDeepKeypointDetector
-from prepare_labels import ID_TO_CLASS, discover_image_records
+from prepare_labels import ID_TO_CLASS, discover_image_records, _load_image_safe
 
 
 def image_to_chw_01(image: np.ndarray) -> np.ndarray:
@@ -136,7 +136,7 @@ def main() -> None:
 
     rows: List[List[str]] = [["image_id", "x", "y", "class_id", "confidence"]]
     for r in records:
-        img = tifffile.imread(r.image_path)
+        img = _load_image_safe(r.image_path)
         chw = image_to_chw_01(img)
         if mantis_filter is not None:
             dummy_hm = np.zeros((2, chw.shape[1], chw.shape[2]), dtype=np.float32)

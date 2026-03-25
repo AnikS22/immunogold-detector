@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Dict, List, Sequence, Tuple
 
 import numpy as np
+from scipy.optimize import linear_sum_assignment
 
 from prepare_labels import ID_TO_CLASS, discover_image_records
 
@@ -37,24 +38,33 @@ def load_predictions(path: str) -> Dict[str, Dict[int, List[Tuple[float, float, 
 def greedy_match(
     gt: np.ndarray, pred: List[Tuple[float, float, float]], max_dist: float
 ) -> Tuple[int, int, int, List[float]]:
+    """Match predictions to ground truth using Hungarian algorithm (optimal assignment)."""
     if len(gt) == 0:
         return 0, len(pred), 0, []
     pred_xy = np.array([[p[0], p[1]] for p in pred], dtype=np.float32) if pred else np.zeros((0, 2), np.float32)
-    used = np.zeros(len(pred_xy), dtype=bool)
+    if len(pred_xy) == 0:
+        return 0, 0, len(gt), []
+
+    dist_matrix = np.sqrt(
+        np.sum((gt[:, np.newaxis, :] - pred_xy[np.newaxis, :, :]) ** 2, axis=2)
+    )
+    cost = dist_matrix.copy()
+    cost[cost > max_dist] = max_dist * 100
+
+    gt_indices, pred_indices = linear_sum_assignment(cost)
+
     tp = 0
     dists: List[float] = []
-    for g in gt:
-        if len(pred_xy) == 0:
-            continue
-        dist = np.sqrt(((pred_xy - g[None, :]) ** 2).sum(axis=1))
-        dist[used] = 1e9
-        j = int(np.argmin(dist))
-        if dist[j] < max_dist:
-            used[j] = True
+    matched_pred = set()
+    for gi, pi in zip(gt_indices, pred_indices):
+        d = dist_matrix[gi, pi]
+        if d <= max_dist:
             tp += 1
-            dists.append(float(dist[j]))
-    fp = int((~used).sum())
+            dists.append(float(d))
+            matched_pred.add(pi)
+
     fn = int(len(gt) - tp)
+    fp = int(len(pred_xy) - len(matched_pred))
     return tp, fp, fn, dists
 
 
