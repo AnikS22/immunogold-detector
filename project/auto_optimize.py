@@ -148,8 +148,8 @@ def generate_retry_args(base_args, diagnoses, round_num, prev_results):
         args['extra'] = ''  # strip mantis/jitter, go simple
 
     elif primary == 'fp_flood':
-        # Too many false positives — reduce pos_weight so model penalizes FP more
-        # (pos_weight amplifies positive pixel loss; lower = less eager to predict positive)
+        # Too many false positives — reduce pos_weight so model is less eager to predict positives
+        # (pos_weight amplifies positive pixel loss; lower can reduce FP flood).
         pw = float(args.get('loss_pos_weight', 300))
         args['loss_pos_weight'] = str(max(pw * 0.5, 30))
         sigma = float(args.get('sigma', 2.0))
