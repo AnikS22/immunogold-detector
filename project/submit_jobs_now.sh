@@ -10,7 +10,8 @@ set -e  # Exit on error
 PROJECT_DIR="/Users/aniksahai/Desktop/Max Planck Project/project"
 HPC_USER="asahai2024"
 HPC_HOST="volta.mpibc.mpg.de"
-HPC_PROJECT_DIR="/mnt/beegfs/home/asahai2024/max-planck-project/project"
+HPC_REPO_ROOT="/mnt/beegfs/home/asahai2024/max-planck-project"
+HPC_PROJECT_DIR="${HPC_REPO_ROOT}/project"
 
 echo "╔════════════════════════════════════════════════════════════════╗"
 echo "║        CENTERNET JOB SUBMISSION - LOCAL MACHINE                 ║"
@@ -22,7 +23,7 @@ echo "Host: $HPC_HOST"
 echo ""
 
 # Verify SSH connectivity
-echo "[1/4] Checking HPC connectivity..."
+echo "[1/5] Checking HPC connectivity..."
 if ssh -q $HPC_USER@$HPC_HOST "echo 'Connected'" > /dev/null 2>&1; then
     echo "✓ HPC connection OK"
 else
@@ -32,7 +33,15 @@ else
 fi
 
 echo ""
-echo "[2/4] Submitting CEM500K Baseline Job..."
+echo "[2/5] Syncing HPC clone (git pull)..."
+if ssh $HPC_USER@$HPC_HOST "set -e; cd $HPC_REPO_ROOT && git pull origin master"; then
+    echo "✓ HPC repo updated from GitHub"
+else
+    echo "⚠ git pull on HPC failed — fix remotes/conflicts, then re-run or sbatch manually"
+fi
+
+echo ""
+echo "[3/5] Submitting CEM500K Baseline Job..."
 JOB1=$(ssh $HPC_USER@$HPC_HOST \
     "cd $HPC_PROJECT_DIR && \
      sbatch hpc/train_centernet_cem500k.slurm" | tee /tmp/job1_output.txt)
@@ -48,7 +57,7 @@ else
 fi
 
 echo ""
-echo "[3/4] Submitting Nature-Level Accelerated Job..."
+echo "[4/5] Submitting Nature-Level Accelerated Job..."
 JOB2=$(ssh $HPC_USER@$HPC_HOST \
     "cd $HPC_PROJECT_DIR && \
      sbatch hpc/train_centernet_nature_fast.slurm" | tee /tmp/job2_output.txt)
@@ -64,7 +73,7 @@ else
 fi
 
 echo ""
-echo "[4/4] Checking Initial Status..."
+echo "[5/5] Checking Initial Status..."
 sleep 5
 
 ssh $HPC_USER@$HPC_HOST \
