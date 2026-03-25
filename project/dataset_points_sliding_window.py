@@ -136,9 +136,29 @@ class SlidingWindowPatchDataset(Dataset):
         if not self.patch_locations:
             raise ValueError("No valid patch locations found!")
 
+        # Separate positive (contains particle) and negative patches for biased sampling
+        self.pos_patch_indices = []
+        self.neg_patch_indices = []
+        for loc_i, (img_idx, y0, x0, rec) in enumerate(self.patch_locations):
+            p6 = rec.points[0]
+            p12 = rec.points[1]
+            all_pts = np.concatenate([p6, p12]) if (len(p6) + len(p12)) > 0 else np.zeros((0, 2))
+            has_particle = False
+            if len(all_pts) > 0:
+                in_patch = ((all_pts[:, 0] >= x0) & (all_pts[:, 0] < x0 + self.patch_w) &
+                            (all_pts[:, 1] >= y0) & (all_pts[:, 1] < y0 + self.patch_h))
+                has_particle = in_patch.any()
+            if has_particle:
+                self.pos_patch_indices.append(loc_i)
+            else:
+                self.neg_patch_indices.append(loc_i)
+
         print(f"SlidingWindowPatchDataset initialized:")
         print(f"  Records: {len(records)}")
         print(f"  Total patch locations: {len(self.patch_locations)}")
+        print(f"  Positive patches (contain particles): {len(self.pos_patch_indices)}")
+        print(f"  Negative patches (empty): {len(self.neg_patch_indices)}")
+        print(f"  pos_fraction: {self.pos_fraction} (fraction of samples centered on positive patches)")
         print(f"  Patches per epoch (samples_per_epoch): {self.samples_per_epoch}")
         print(f"  Patch size: {self.patch_h}×{self.patch_w}, stride: {self.patch_stride}")
 
@@ -192,8 +212,15 @@ class SlidingWindowPatchDataset(Dataset):
     def __getitem__(self, index: int):
         del index
 
-        # Randomly select a patch location
-        loc_idx = int(self.rng.integers(0, len(self.patch_locations)))
+        # Biased sampling: pos_fraction of samples come from patches with particles
+        use_pos = (len(self.pos_patch_indices) > 0 and
+                   self.rng.random() < self.pos_fraction)
+        if use_pos:
+            loc_idx = self.pos_patch_indices[int(self.rng.integers(0, len(self.pos_patch_indices)))]
+        elif len(self.neg_patch_indices) > 0:
+            loc_idx = self.neg_patch_indices[int(self.rng.integers(0, len(self.neg_patch_indices)))]
+        else:
+            loc_idx = int(self.rng.integers(0, len(self.patch_locations)))
         img_idx, y0, x0, _ = self.patch_locations[loc_idx]
 
         image = self.images[img_idx]
