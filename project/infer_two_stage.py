@@ -13,7 +13,7 @@ import torch.nn.functional as F
 from infer_detector import image_to_chw_01, peak_detect, tiled_inference
 from model_refiner import PatchRefinerCNN
 from model_unet import UNetKeypointDetector
-from prepare_labels import discover_image_records
+from prepare_labels import discover_image_records, _load_image_safe
 
 
 def _extract_patch(chw: np.ndarray, x: float, y: float, patch_size: int) -> np.ndarray:
@@ -70,7 +70,7 @@ def main() -> None:
 
     with torch.no_grad():
         for r in records:
-            img = tifffile.imread(r.image_path)
+            img = _load_image_safe(r.image_path)
             chw = image_to_chw_01(img)
             pred = tiled_inference(
                 heatmap_model,

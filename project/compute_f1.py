@@ -7,7 +7,7 @@ from scipy.ndimage import label, center_of_mass
 from scipy.spatial.distance import cdist
 
 from model_unet_deep import UNetDeepKeypointDetector
-from prepare_labels import discover_image_records
+from prepare_labels import discover_image_records, _load_image_safe
 import tifffile
 
 def peak_detection(heatmap, threshold=0.20, min_distance=10):
@@ -97,7 +97,7 @@ test_record = records[test_idx[0]]
 print(f"Test image: {test_record.image_path.split('/')[-2]}")
 
 # Load image
-img = tifffile.imread(test_record.image_path).astype(np.float32)
+img = _load_image_safe(test_record.image_path).astype(np.float32)
 if img.ndim == 2:
     img = np.repeat(img[:, :, None], 3, axis=2)
 mn, mx = img.min(), img.max()

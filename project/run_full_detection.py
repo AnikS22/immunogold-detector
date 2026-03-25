@@ -18,6 +18,7 @@ from log_detector import multiscale_log_candidates
 from model_golddigger_cgan import GoldDiggerGenerator
 from model_refiner import PatchRefinerCNN
 from model_unet import UNetKeypointDetector
+from prepare_labels import _load_image_safe
 
 
 def list_tifs(scan_root: str) -> List[str]:
@@ -280,7 +281,7 @@ def main() -> None:
 
     with torch.no_grad():
         for idx, tif_path in enumerate(tifs, start=1):
-            img = tifffile.imread(tif_path)
+            img = _load_image_safe(tif_path)
             chw = image_to_chw_01(img)
             image_id = os.path.splitext(os.path.basename(tif_path))[0]
 

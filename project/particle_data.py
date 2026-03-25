@@ -8,6 +8,7 @@ import numpy as np
 import tifffile
 
 from dataset_guard import enforce_allowed_data_root
+from prepare_labels import _load_image_safe
 
 
 @dataclass
@@ -77,7 +78,7 @@ def discover_synapse_samples(root_dir: str) -> List[SynapseSample]:
         if image_path is None:
             continue
 
-        image = tifffile.imread(image_path)
+        image = _load_image_safe(image_path)
         h, w = image.shape[:2]
 
         csv_paths: List[str] = []

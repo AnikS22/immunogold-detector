@@ -7,7 +7,7 @@ from scipy.ndimage import label
 import tifffile
 
 from model_unet_deep import UNetDeepKeypointDetector
-from prepare_labels import discover_image_records
+from prepare_labels import discover_image_records, _load_image_safe
 
 # Load model
 print("Loading model: checkpoints/4594820/detector_best.pt")
@@ -38,7 +38,7 @@ print(f"  Data: Sliding window (256×256, stride=128)")
 print(f"  Augmentation: 8 EM-realistic + sigma_jitter")
 
 # Load and preprocess image
-img = tifffile.imread(test_record.image_path).astype(np.float32)
+img = _load_image_safe(test_record.image_path).astype(np.float32)
 if img.ndim == 2:
     img = np.repeat(img[:, :, None], 3, axis=2)
 mn, mx = img.min(), img.max()

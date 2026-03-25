@@ -9,6 +9,7 @@ from pathlib import Path
 from scipy.ndimage import gaussian_filter
 import tifffile
 from typing import Dict, List, Tuple, Optional
+from prepare_labels import _load_image_safe
 
 
 class CenterNetDataset(Dataset):
@@ -39,7 +40,7 @@ class CenterNetDataset(Dataset):
         self.augment = augment
 
         # Pixel-per-micron conversion (from Max Planck data)
-        self.pixels_per_micron = 25600 / 6.4  # 4000 pixels per micron
+        self.pixels_per_micron = 1790.0  # verified from ImageJ ROI files
 
         # Discover patches
         self.patches = self._discover_patches(image_names)
@@ -68,7 +69,7 @@ class CenterNetDataset(Dataset):
                 print(f"Warning: No .tif in {img_dir}")
                 continue
 
-            img = tifffile.imread(str(main_tif))
+            img = _load_image_safe(str(main_tif))
             h, w = img.shape[:2]
 
             # Generate patches
@@ -186,7 +187,7 @@ class CenterNetDataset(Dataset):
         if main_tif is None:
             main_tif = tif_files[0]
 
-        image = tifffile.imread(str(main_tif)).astype(np.float32)
+        image = _load_image_safe(str(main_tif)).astype(np.float32)
 
         # Normalize to [0, 1]
         if image.max() > 1.0:
@@ -308,7 +309,7 @@ class CenterNetParticleDataset(Dataset):
         self.data_root = Path(records[0]["data_root"]) if records else Path(".")
 
         # Pixel-per-micron conversion
-        self.pixels_per_micron = 25600 / 6.4  # 4000 pixels per micron
+        self.pixels_per_micron = 1790.0  # verified from ImageJ ROI files
 
     def _load_image(self, img_name: str, data_root: Path) -> np.ndarray:
         """Load and normalize image."""
@@ -327,7 +328,7 @@ class CenterNetParticleDataset(Dataset):
         if main_tif is None:
             main_tif = tif_files[0]
 
-        image = tifffile.imread(str(main_tif)).astype(np.float32)
+        image = _load_image_safe(str(main_tif)).astype(np.float32)
         if image.max() > 1.0:
             image = image / 255.0
         return image
@@ -432,7 +433,7 @@ class CenterNetParticleDataset(Dataset):
         if main_tif is None:
             main_tif = tif_files[0]
 
-        image = tifffile.imread(str(main_tif)).astype(np.float32)
+        image = _load_image_safe(str(main_tif)).astype(np.float32)
         if image.max() > 1.0:
             image = image / 255.0
         h, w = image.shape[:2]
