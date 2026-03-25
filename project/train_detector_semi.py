@@ -15,7 +15,7 @@ from dataset_guard import enforce_allowed_data_root
 from dataset_points import PointPatchDataset
 from infer_detector import image_to_chw_01, peak_detect, tiled_inference
 from model_unet import UNetKeypointDetector
-from prepare_labels import ImageRecord, discover_image_records
+from prepare_labels import ImageRecord, discover_image_records, _load_image_safe
 
 
 class FocalBCELoss(nn.Module):
@@ -167,7 +167,7 @@ def build_pseudo_records(
 
     pseudo: List[ImageRecord] = []
     for i, p in enumerate(tif_paths):
-        img = tifffile.imread(p)
+        img = _load_image_safe(p)
         h, w = img.shape[:2]
         chw = image_to_chw_01(img)
         pred_list = _predict_heatmaps_with_tta(teacher, chw, device)

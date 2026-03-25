@@ -27,7 +27,7 @@ import torch.nn as nn
 # Ensure project dir is in path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from prepare_labels import discover_image_records, gaussian_heatmap
+from prepare_labels import discover_image_records, gaussian_heatmap, _load_image_safe
 from model_unet_deep import UNetDeepKeypointDetector
 from augmentations import MantisLocalContrast
 import tifffile
@@ -94,7 +94,7 @@ def main():
     mantis = MantisLocalContrast(kernel_sigma=15.0, strength=0.5)
 
     for r in records[:3]:  # First 3 images
-        img = tifffile.imread(r.image_path)
+        img = _load_image_safe(r.image_path)
         chw = to_chw_01(img)
 
         # Apply Mantis
@@ -169,7 +169,7 @@ def main():
     best_rec = max(records, key=lambda r: len(r.points[0]) + len(r.points[1]))
     print(f"Using: {best_rec.image_id} ({len(best_rec.points[0])} 6nm + {len(best_rec.points[1])} 12nm)")
 
-    img = tifffile.imread(best_rec.image_path)
+    img = _load_image_safe(best_rec.image_path)
     chw = to_chw_01(img)
     dummy = np.zeros((2, chw.shape[1], chw.shape[2]), dtype=np.float32)
     chw, _ = mantis(chw, dummy)

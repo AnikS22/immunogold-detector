@@ -13,7 +13,7 @@ from torch.utils.data import DataLoader, Dataset
 
 from dataset_guard import enforce_allowed_data_root
 from model_golddigger_cgan import GoldDiggerGenerator, GoldDiggerPatchDiscriminator
-from prepare_labels import ImageRecord, discover_image_records
+from prepare_labels import ImageRecord, discover_image_records, _load_image_safe
 
 
 def draw_disk_map(image_hw: Tuple[int, int], points: np.ndarray, radius: int) -> np.ndarray:
@@ -92,7 +92,7 @@ class GoldPatchDataset(Dataset):
         self.p12: List[np.ndarray] = []
         self.p_all: List[np.ndarray] = []
         for r in records:
-            img = image_to_chw01(tifffile.imread(r.image_path))
+            img = image_to_chw01(_load_image_safe(r.image_path))
             _, h, w = img.shape
             if h < self.patch_size or w < self.patch_size:
                 continue

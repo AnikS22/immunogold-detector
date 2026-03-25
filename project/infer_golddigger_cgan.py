@@ -12,7 +12,7 @@ from scipy.ndimage import center_of_mass, label
 
 from infer_detector import image_to_chw_01, tiled_inference
 from model_golddigger_cgan import GoldDiggerGenerator
-from prepare_labels import discover_image_records
+from prepare_labels import discover_image_records, _load_image_safe
 
 
 def components_to_points(
@@ -80,7 +80,7 @@ def main() -> None:
     records = discover_image_records(args.data_root)
     rows: List[List[str]] = [["image_id", "x", "y", "class_id", "confidence"]]
     for r in records:
-        img = tifffile.imread(r.image_path)
+        img = _load_image_safe(r.image_path)
         chw = image_to_chw_01(img)
         pred = tiled_inference(
             model=model,

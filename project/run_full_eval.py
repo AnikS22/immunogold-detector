@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from dataset_points import _to_chw_01
 from model_unet_deep import UNetDeepKeypointDetector
-from prepare_labels import discover_image_records
+from prepare_labels import discover_image_records, _load_image_safe
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -67,7 +67,7 @@ def main():
     with torch.no_grad():
         for i, rec in enumerate(test_records):
             try:
-                img = _to_chw_01(tifffile.imread(rec.image_path))
+                img = _to_chw_01(_load_image_safe(rec.image_path))
                 img_t = torch.from_numpy(img).float().unsqueeze(0).to(device)
                 logits = model(img_t)
                 probs = torch.sigmoid(logits)

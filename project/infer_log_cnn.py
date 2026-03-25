@@ -12,7 +12,7 @@ import torch.nn.functional as F
 from dataset_guard import enforce_allowed_data_root
 from log_detector import multiscale_log_candidates
 from model_refiner import PatchRefinerCNN
-from prepare_labels import discover_image_records
+from prepare_labels import discover_image_records, _load_image_safe
 
 
 def _to_chw_01(image: np.ndarray) -> np.ndarray:
@@ -89,7 +89,7 @@ def main() -> None:
 
     with torch.no_grad():
         for r in records:
-            img = tifffile.imread(r.image_path)
+            img = _load_image_safe(r.image_path)
             gray = img.mean(axis=2) if img.ndim == 3 else img.astype(np.float32)
             gray = gray.astype(np.float32)
             mn, mx = float(gray.min()), float(gray.max())
